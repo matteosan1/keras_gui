@@ -8,4 +8,92 @@
     <p>{{ message['content'] }}</p>
 </div>
 {% endfor %}
+
+<head>
+<script type="text/javascript">
+  function addRows(){ 
+      var table = document.getElementById('layers');
+      var rowCount = table.rows.length;
+      var cellCount = table.rows[0].cells.length; 
+      var row = table.insertRow(rowCount);
+      for(var i =0; i <= cellCount; i++){
+	  var cell = 'cell'+i;
+	  cell = row.insertCell(i);
+	  var copycel = document.getElementById('col'+i).innerHTML;
+	  cell.innerHTML=copycel;
+      }
+  }
+  function deleteRows(){
+      var table = document.getElementById('layers');
+      var rowCount = table.rows.length;
+      if(rowCount > '2'){
+	  var row = table.deleteRow(rowCount-1);
+	  rowCount--;
+      }
+      else{
+	  alert('There should be atleast one row');
+      }
+  }
+</script>
+</head>
+
+<form action="#" method="post">
+
+  # data file (with columns selection
+
+  <input type="checkbox" id="layer" name="scaling" value="scale">
+  <label for="scaling"> Do Scaling</label><br>
+
+  <label for="epochs">Epochs:</label>
+  <input type="number" name="epochs" id="layer" min="1" max="10000" step="10" value="10">
+  <label for="batchsize">Batch Size:</label>
+  <input type="number" name="batchsize" id="layer" min="0" max="10000" step="100" value="0">
+  <table id="layers">
+    <tr>
+      <th>Type</th>
+      <th>Neurons</th>
+      <th>Activation</th> 
+    </tr> 
+    <tr> 
+      <td id="col0">
+	<select name="type[]" id="layer"> 
+	  <option value="0">Linear</option> 
+	  <option value="1">Convolution</option>
+	  <option value="2">Flatten</option>
+	  <option value="3">MaxPool</option>
+	</select> 
+      </td> 
+      <td id="col1">
+	<input type="number" name="neurons[]" id="layer" min="1" max="100" step="1" value="1">
+      </td> 
+      <td id="col2"> 
+	<select name="activation[]" id="layer"> 
+	  <option value="0">Sigmoid</option> 
+	  <option value="1">ReLu</option>
+	  <option value="2">Tanh</option>
+	</select> 
+      </td> 
+    </tr>  
+  </table> 
+  <table> 
+    <tr> 
+      <td><input type="button" value="Add Row" onclick="addRows()" /></td> 
+      <td><input type="button" value="Delete Row" onclick="deleteRows()" /></td> 
+      <td><input type="submit" value="Submit" /></td> 
+    </tr>  
+  </table>
+
+  <label for="optimizer">Optimizer:</label>
+  <select name="optimizer" id="layer"> 
+    <option value="0">Adam</option> 
+  </select>
+
+  <label for="loss">Loss Function:</label>
+  <select name="loss" id="layer"> 
+    <option value="0">RMS</option>
+    <option value="1">ABS</option> 
+  </select> 
+
+</form> 
 {% endblock %}
+

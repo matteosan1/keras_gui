@@ -154,6 +154,15 @@ def create():
     
     return render_template('create.html')
 
+@app.route('/create_model/', methods=('GET', 'POST'))
+def create_model():
+    if request.method == 'POST':
+        pass
+        messages.append({'title':"pIPPO", 'content':content})
+        return redirect(url_for('index'))
+    
+    return render_template('create.html')
+
 if __name__ == "__main__":
     print (("* Loading Keras model and Flask starting server..."
             "please wait until server  has fully started"))

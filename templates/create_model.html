@@ -3,43 +3,182 @@
 {% block content %}
 <h1>{% block title %} Add a New Message {% endblock %}</h1>
 
-<div id="table" class="table-editable">
-    <span class="table-add glyphicon glyphicon-plus"></span>
-    <table class="table">
-      <tr>
-        <th>Name</th>
-        <th>Value</th>
-        <th></th>
-        <th></th>
-      </tr>
-      <tr>
-        <td contenteditable="true">Stir Fry</td>
-        <td contenteditable="true">stir-fry</td>
-        <td>
-          <span class="table-remove glyphicon glyphicon-remove"></span>
-        </td>
-        <td>
-          <span class="table-up glyphicon glyphicon-arrow-up"></span>
-          <span class="table-down glyphicon glyphicon-arrow-down"></span>
-        </td>
-      </tr>
-      <!-- This is our clonable table line -->
-      <tr class="hide">
-        <td contenteditable="true">Untitled</td>
-        <td contenteditable="true">undefined</td>
-        <td>
-          <span class="table-remove glyphicon glyphicon-remove"></span>
-        </td>
-        <td>
-          <span class="table-up glyphicon glyphicon-arrow-up"></span>
-          <span class="table-down glyphicon glyphicon-arrow-down"></span>
-        </td>
-      </tr>
-    </table>
-  </div>
-  
-  <button id="export-btn" class="btn btn-primary">Export Data</button>
-  <p id="export"></p>
-</div>
+<head>
+    <script type="text/javascript">
+     function addRows() { 
+	 var table = document.getElementById('layers');
+	 var rowCount = table.rows.length;
+	 var cellCount = table.rows[0].cells.length; 
+	 var row = table.insertRow(rowCount);
+	 for(var i=0; i < cellCount; i++){
+	     var cell = 'cell'+i;
+	     cell = row.insertCell(i);
+	     var copycel = document.getElementById('col'+i).innerHTML;
+	     cell.innerHTML=copycel;
+	 }
+     }
+     function deleteRows(){
+	 var table = document.getElementById('layers');
+	 var rowCount = table.rows.length;
+	 if(rowCount > '2'){
+	     var row = table.deleteRow(rowCount-1);
+	     rowCount--;
+	 }
+	 else{
+	     alert('There should be atleast one row');
+	 }
+     }
 
+     function populate(optionArray, xparams, yparams) {
+         var xp = document.getElementById(xparams);
+	 var yp = document.getElementById(yparams);
+         xp.replaceChildren();
+	 yp.replaceChildren();
+ 
+	 for (i = 0; i < optionArray.length; ++i) {
+	     var pair = optionArray[i];
+	     var checkbox = document.createElement("input");
+	     checkbox.type = "checkbox";
+	     checkbox.name = pair  + "_x";
+	     checkbox.value = pair;
+	     xp.appendChild(checkbox);
+	     
+	     var label = document.createElement('label')
+	     label.htmlFor = pair;
+	     label.appendChild(document.createTextNode(pair));
+
+	     xp.appendChild(label);
+	     xp.appendChild(document.createElement("br"));    
+	 }
+
+     	 for (i = 0; i < optionArray.length; ++i) {
+	     var pair = optionArray[i];
+	     var checkbox = document.createElement("input");
+	     checkbox.type = "checkbox";
+	     checkbox.name = pair + "_y";
+	     checkbox.value = pair;
+	     yp.appendChild(checkbox);
+	     
+	     var label = document.createElement('label')
+	     label.htmlFor = pair;
+	     label.appendChild(document.createTextNode(pair));
+
+	     yp.appendChild(label);
+	     yp.appendChild(document.createElement("br"));    
+	 }
+     }
+
+     async function uploadFile() {
+	 let formData = new FormData();
+	 formData.append("file", datafile.files[0]);
+	 const response = await fetch('/loaddata', {
+	     method: "POST",
+	     body: formData,
+	 });
+	 //alert('The file hs been uploaded successfully.');
+	 const json = await response.json();
+	 populate(json, 'xparams', 'yparams');
+     }
+
+     async function trainingForm(event) {
+	 event.preventDefault();
+	 var myform = document.getElementById("trainingForm");	 
+	 var formData = new FormData(myform);
+
+	 await fetch("/create_model", {
+	     method: "POST",
+	     body: formData,
+	 }).then(response => response.json())
+	 .then(function(response) {
+	     if (response['msg'] != "OK") {
+		 alert(response['msg']);
+	     }
+	 });
+	     //	     if (!response.ok) {	  
+	     //		 var resp = response.json().value['msg'];
+	     //		 console.debug(resp.value);
+	     //		 alert(JSON.stringify(resp));
+     		 //throw new Error('network returns error');
+     	     //}
+//	 });
+     //	     return response.json()
+     };
+    </script>
+</head>
+
+<input type="file" id="datafile" name="datafile" />
+<button id="upload-button" onclick="uploadFile()"> Upload </button>
+
+<form id="trainingForm" name="trainingForm">
+    <table id="vars" name="vars">
+	<tr>
+	    <th>Input Params</th>
+	    <th>Output Params</th>
+	</tr>
+	<tr>
+	    <td><div id="xparams"></div></td>
+	    <td><div id="yparams"></div></td>
+	</tr>
+    </table>
+    
+    <input type="checkbox" id="layer" name="scaling" value="scale">
+    <label for="scaling"> Do Scaling</label><br>
+
+    <label for="epochs">Epochs:</label>
+    <input type="number" name="epochs" id="layer" min="0" max="10000" step="10" value="10">
+    <label for="batchsize">Batch Size:</label>
+    <input type="number" name="batchsize" id="layer" min="0" max="10000" step="100" value="0">
+    Network Structure (do not include input layer)<br>
+    <table id="layers">
+	<tr>
+	    <th>Type</th>
+	    <th>Neurons</th>
+	    <th>Activation</th> 
+	</tr> 
+	<tr> 
+	    <td id="col0">
+		<select name="type" id="layer"> 
+		    <option value="Linear">Linear</option> 
+		    <option value="Convolution">Convolution</option>
+		    <option value="Flatten">Flatten</option>
+		    <option value="MaxPool">MaxPool</option>
+		</select> 
+	    </td> 
+	    <td id="col1">
+		<input type="number" name="neurons" id="layer" min="1" max="100" step="1" value="1">
+	    </td> 
+	    <td id="col2"> 
+		<select name="activation" id="layer"> 
+		    <option value="Sigmoid">Sigmoid</option> 
+		    <option value="ReLU">ReLU</option>
+		    <option value="Tanh">Tanh</option>
+		</select> 
+	    </td> 
+	</tr>  
+    </table> 
+    <table> 
+	<tr> 
+	    <td><input type="button" value="Add Layer" onclick="addRows()" /></td> 
+	    <td><input type="button" value="Delete Layer" onclick="deleteRows()" /></td> 
+	</tr>  
+    </table>
+    
+    <label for="optimizer">Optimizer:</label>
+    <select name="optimizer" id="layer"> 
+	<option value="Adam">Adam</option> 
+    </select>
+    
+    <label for="loss">Loss Function:</label>
+    <select name="loss" id="layer"> 
+	<option value="RMS">RMS</option>
+	<option value="ABS">ABS</option> 
+    </select> 
+    <br>
+    <input name="Submit" type="submit" value="Submit" />
+</form>
+
+<script type="text/javascript">
+    var myform = document.getElementById("trainingForm");
+    myform.addEventListener("submit", trainingForm);
+</script>
 {% endblock %}

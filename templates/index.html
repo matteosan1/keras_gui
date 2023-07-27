@@ -1,99 +1,209 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>{% block title %} Messages {% endblock %}</h1>
-{% for message in messages %}
-<div class='message'>
-    <h3>{{ message['title'] }}</h3>
-    <p>{{ message['content'] }}</p>
-</div>
-{% endfor %}
 
 <head>
-<script type="text/javascript">
-  function addRows(){ 
-      var table = document.getElementById('layers');
-      var rowCount = table.rows.length;
-      var cellCount = table.rows[0].cells.length; 
-      var row = table.insertRow(rowCount);
-      for(var i =0; i <= cellCount; i++){
-	  var cell = 'cell'+i;
-	  cell = row.insertCell(i);
-	  var copycel = document.getElementById('col'+i).innerHTML;
-	  cell.innerHTML=copycel;
-      }
-  }
-  function deleteRows(){
-      var table = document.getElementById('layers');
-      var rowCount = table.rows.length;
-      if(rowCount > '2'){
-	  var row = table.deleteRow(rowCount-1);
-	  rowCount--;
-      }
-      else{
-	  alert('There should be atleast one row');
-      }
-  }
-</script>
+    <script type="text/javascript">
+     function addRows() { 
+	 var table = document.getElementById('layers');
+	 var rowCount = table.rows.length;
+	 var cellCount = table.rows[0].cells.length; 
+	 var row = table.insertRow(rowCount);
+	 for(var i=0; i < cellCount; i++){
+	     var cell = 'cell'+i;
+	     cell = row.insertCell(i);
+	     var copycel = document.getElementById('col'+i).innerHTML;
+	     cell.innerHTML=copycel;
+	 }
+     }
+     function deleteRows(){
+	 var table = document.getElementById('layers');
+	 var rowCount = table.rows.length;
+	 if(rowCount > '2'){
+	     var row = table.deleteRow(rowCount-1);
+	     rowCount--;
+	 }
+	 else{
+	     alert('There should be atleast one row');
+	 }
+     }
+
+     function populate(optionArray, xparams, yparams) {
+         var xp = document.getElementById(xparams);
+	 var yp = document.getElementById(yparams);
+         xp.replaceChildren();
+	 yp.replaceChildren();
+ 
+	 for (i = 0; i < optionArray.length; ++i) {
+	     var pair = optionArray[i];
+	     var checkbox = document.createElement("input");
+	     checkbox.type = "checkbox";
+	     checkbox.name = pair  + "_x";
+	     checkbox.value = pair;
+	     xp.appendChild(checkbox);
+	     
+	     var label = document.createElement('label')
+	     label.htmlFor = pair;
+	     label.appendChild(document.createTextNode(pair));
+
+	     xp.appendChild(label);
+	     xp.appendChild(document.createElement("br"));    
+	 }
+
+     	 for (i = 0; i < optionArray.length; ++i) {
+	     var pair = optionArray[i];
+	     var checkbox = document.createElement("input");
+	     checkbox.type = "checkbox";
+	     checkbox.name = pair + "_y";
+	     checkbox.value = pair;
+	     yp.appendChild(checkbox);
+	     
+	     var label = document.createElement('label')
+	     label.htmlFor = pair;
+	     label.appendChild(document.createTextNode(pair));
+
+	     yp.appendChild(label);
+	     yp.appendChild(document.createElement("br"));    
+	 }
+     }
+
+     async function uploadFile() {
+	 let formData = new FormData();
+	 formData.append("file", datafile.files[0]);
+	 const response = await fetch('/loaddata', {
+	     method: "POST",
+	     body: formData,
+	 });
+	 //alert('The file hs been uploaded successfully.');
+	 const json = await response.json();
+	 populate(json, 'xparams', 'yparams');
+     }
+
+     async function trainingForm(event) {
+	 event.preventDefault();
+	 var myform = document.getElementById("trainingForm");	 
+	 var formData = new FormData(myform);
+
+	 await fetch("/create_model", {
+	     method: "POST",
+	     body: formData,
+	 }).then(response => response.json())
+	 .then(function(response) {
+	     if (response['msg'] != "OK") {
+		 alert(response['msg']);
+	     }
+	 });
+     };
+    </script>
 </head>
 
-<form action="#" method="post">
-
-  # data file (with columns selection
-
-  <input type="checkbox" id="layer" name="scaling" value="scale">
-  <label for="scaling"> Do Scaling</label><br>
-
-  <label for="epochs">Epochs:</label>
-  <input type="number" name="epochs" id="layer" min="1" max="10000" step="10" value="10">
-  <label for="batchsize">Batch Size:</label>
-  <input type="number" name="batchsize" id="layer" min="0" max="10000" step="100" value="0">
-  <table id="layers">
+<table>
     <tr>
-      <th>Type</th>
-      <th>Neurons</th>
-      <th>Activation</th> 
-    </tr> 
-    <tr> 
-      <td id="col0">
-	<select name="type[]" id="layer"> 
-	  <option value="0">Linear</option> 
-	  <option value="1">Convolution</option>
-	  <option value="2">Flatten</option>
-	  <option value="3">MaxPool</option>
-	</select> 
-      </td> 
-      <td id="col1">
-	<input type="number" name="neurons[]" id="layer" min="1" max="100" step="1" value="1">
-      </td> 
-      <td id="col2"> 
-	<select name="activation[]" id="layer"> 
-	  <option value="0">Sigmoid</option> 
-	  <option value="1">ReLu</option>
-	  <option value="2">Tanh</option>
-	</select> 
-      </td> 
-    </tr>  
-  </table> 
-  <table> 
-    <tr> 
-      <td><input type="button" value="Add Row" onclick="addRows()" /></td> 
-      <td><input type="button" value="Delete Row" onclick="deleteRows()" /></td> 
-      <td><input type="submit" value="Submit" /></td> 
-    </tr>  
-  </table>
+	<td><input type="file" id="datafile" name="datafile" /></td>
+	<td><button id="upload-button" onclick="uploadFile()"> Upload </button></td>
+    </tr>
+</table>
+<form id="trainingForm" name="trainingForm">
+    <table>
+	<tr>
+	    <td>
+		<table id="vars" name="vars">
+		    <tr>
+			<th>Input Params</th>
+			<th>Output Params</th>
+		    </tr>
+		    <tr>
+			<td><div id="xparams"></div></td>
+			<td><div id="yparams"></div></td>
+		    </tr>
+		</table>
+		<br>
+	    </td>
+	</tr>
+	<tr>
+	    <td>
+		<input type="checkbox" id="layer" name="scaling" value="scale">
+		<label for="scaling"> Do Scaling</label><br>
+		<br>
+	    </td>
+	</tr>
+	<tr>
+	    <td>
+		<label for="epochs">Epochs:</label>
+		<input type="number" name="epochs" id="layer" min="0" max="10000" step="10" value="10">
+	    </td>
+	    <td>
+		<label for="batchsize">Batch Size:</label>
+		<input type="number" name="batchsize" id="layer" min="0" max="10000" step="100" value="0">
+	    </td>
+	</tr>
+	<tr>
+	    <td>
+		Network Structure (do not include input layer)
+	    </td>
+	</tr>
+	<tr>
+	    <td>
+		<table id="layers">
+		    <tr>
+			<th>Type</th>
+			<th>Neurons</th>
+			<th>Activation</th> 
+		    </tr> 
+		    <tr> 
+			<td id="col0">
+			    <select name="type" id="layer"> 
+				<option value="Linear">Linear</option> 
+				<option value="Convolution">Convolution</option>
+				<option value="Flatten">Flatten</option>
+				<option value="MaxPool">MaxPool</option>
+			    </select> 
+			</td> 
+			<td id="col1">
+			    <input type="number" name="neurons" id="layer" min="1" max="100" step="1" value="1">
+			</td> 
+			<td id="col2"> 
+			    <select name="activation" id="layer"> 
+				<option value="Sigmoid">Sigmoid</option> 
+				<option value="ReLU">ReLU</option>
+				<option value="Tanh">Tanh</option>
+			    </select> 
+			</td> 
+		    </tr>  
+		</table> 
+	    </td>
+	</tr>
+	<tr> 
+	    <td><input type="button" value="Add Layer" onclick="addRows()" /></td> 
+	    <td><input type="button" value="Delete Layer" onclick="deleteRows()" /></td> 
+	</tr>  
+	<tr>
+	    <td>
+		<label for="optimizer">Optimizer:</label>
+		<select name="optimizer" id="layer">
+		    <option value="Adam">Adam</option> 
+		</select>
+	    </td>
+	    <td>
+		<label for="loss">Loss Function:</label>
+		<select name="loss" id="layer"> 
+		    <option value="RMS">RMS</option>
+		    <option value="ABS">ABS</option> 
+		</select>
+	    </td>
+	</tr>
+	<tr>
+	    <td>
+		<input name="Submit" type="submit" value="Submit" />
+	    </td>
+	</tr>
+    </table>
+</form>
 
-  <label for="optimizer">Optimizer:</label>
-  <select name="optimizer" id="layer"> 
-    <option value="0">Adam</option> 
-  </select>
+<script type="text/javascript">
+    var myform = document.getElementById("trainingForm");
+    myform.addEventListener("submit", trainingForm);
+</script>
 
-  <label for="loss">Loss Function:</label>
-  <select name="loss" id="layer"> 
-    <option value="0">RMS</option>
-    <option value="1">ABS</option> 
-  </select> 
-
-</form> 
 {% endblock %}
 

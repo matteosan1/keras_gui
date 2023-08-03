@@ -2,208 +2,165 @@
 
 {% block content %}
 
-<head>
-    <script type="text/javascript">
-     function addRows() { 
-	 var table = document.getElementById('layers');
-	 var rowCount = table.rows.length;
-	 var cellCount = table.rows[0].cells.length; 
-	 var row = table.insertRow(rowCount);
-	 for(var i=0; i < cellCount; i++){
-	     var cell = 'cell'+i;
-	     cell = row.insertCell(i);
-	     var copycel = document.getElementById('col'+i).innerHTML;
-	     cell.innerHTML=copycel;
-	 }
-     }
-     function deleteRows(){
-	 var table = document.getElementById('layers');
-	 var rowCount = table.rows.length;
-	 if(rowCount > '2'){
-	     var row = table.deleteRow(rowCount-1);
-	     rowCount--;
-	 }
-	 else{
-	     alert('There should be atleast one row');
-	 }
-     }
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
 
-     function populate(optionArray, xparams, yparams) {
-         var xp = document.getElementById(xparams);
-	 var yp = document.getElementById(yparams);
-         xp.replaceChildren();
-	 yp.replaceChildren();
- 
-	 for (i = 0; i < optionArray.length; ++i) {
-	     var pair = optionArray[i];
-	     var checkbox = document.createElement("input");
-	     checkbox.type = "checkbox";
-	     checkbox.name = pair  + "_x";
-	     checkbox.value = pair;
-	     xp.appendChild(checkbox);
-	     
-	     var label = document.createElement('label')
-	     label.htmlFor = pair;
-	     label.appendChild(document.createTextNode(pair));
+<script src="{{ url_for('static', filename='create_model.js') }}"></script>
 
-	     xp.appendChild(label);
-	     xp.appendChild(document.createElement("br"));    
-	 }
+<style>
+  .alert {
+      display: none;
+  }
+</style>
 
-     	 for (i = 0; i < optionArray.length; ++i) {
-	     var pair = optionArray[i];
-	     var checkbox = document.createElement("input");
-	     checkbox.type = "checkbox";
-	     checkbox.name = pair + "_y";
-	     checkbox.value = pair;
-	     yp.appendChild(checkbox);
-	     
-	     var label = document.createElement('label')
-	     label.htmlFor = pair;
-	     label.appendChild(document.createTextNode(pair));
+<div class="form-horizontal">
+  <div class="form-group">
+    <label class="control-label col-sm-2">Data File</label>
+    <div class="col-sm-4">
+      <input class="form-control" type="file" name="datafile" id="datafile" />
+    </div>
+  </div>
+</div>
 
-	     yp.appendChild(label);
-	     yp.appendChild(document.createElement("br"));    
-	 }
-     }
+<form class="form-horizontal" id="trainingForm">
+  <div class="form-group">
+    <label class="control-label col-sm-2">Variables:</label>
+    <div class="col-sm-6 column">
+      <table class="table table-bordered table-hover" id="tab_inputs">
+	<thead>
+	  <tr>
+	    <th class="text-center">Inputs</th>
+	    <th class="text-center">Outputs</th>
+	  </tr>
+	</thead>
+	<tbody>
+	  <tr id='col0'>
+	    <td><div class="checkbox" name="xparams" id="xparams"></div></td>
+	    <td><div class="checkbox" name="yparams" id="yparams"></div></td>
+	  </tr>
+	</tbody>
+      </table>
+    </div>
+  </div>
 
-     async function uploadFile() {
-	 let formData = new FormData();
-	 formData.append("file", datafile.files[0]);
-	 const response = await fetch('/loaddata', {
-	     method: "POST",
-	     body: formData,
-	 });
-	 //alert('The file hs been uploaded successfully.');
-	 const json = await response.json();
-	 populate(json, 'xparams', 'yparams');
-     }
+  <div id='variableError' class='alert alert-danger'>Alert</div>
 
-     async function trainingForm(event) {
-	 event.preventDefault();
-	 var myform = document.getElementById("trainingForm");	 
-	 var formData = new FormData(myform);
+  <div class="form-group">
+    <div class="col-sm-offset-2 col-sm-10">
+      <div class="checkbox">
+        <label><input type="checkbox" id="scaling" name="scaling" value="scale"> Do Scaling</label>
+      </div>
+    </div>
+  </div>
 
-	 await fetch("/create_model", {
-	     method: "POST",
-	     body: formData,
-	 }).then(response => response.json())
-	 .then(function(response) {
-	     if (response['msg'] != "OK") {
-		 alert(response['msg']);
-	     }
-	 });
-     };
-    </script>
-</head>
+  <div class="form-group">
+    <label class="control-label col-sm-2">Test Sample Fraction (%):</label>
+    <div class="col-sm-2">
+      <input class="form-control" type="number" id="traintest" name="traintest" min="0" max="100" step="5" value="20">
+    </div>
+  </div>
+  
+  <div class="form-group">
+    <label class="control-label col-sm-2">Neural Network Name:</label>
+    <div class="col-sm-2">
+      <input class="form-control" type="text" id="nnname" name="nnname" placeholder="NN name..." />
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="control-label col-sm-2">Epochs:</label>
+    <div class="col-sm-2">
+      <input class="form-control" type="number" id="epochs" name="epochs" min="0" max="10000" step="10" value="10" />
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="control-label col-sm-2">Batch Size:</label>
+    <div class="col-sm-2">
+      <input class="form-control" type="number" id="batchsize" name="batchsize" min="0" max="10000" step="100" value="0">
+    </div>
+  </div>
 
-<table>
-    <tr>
-	<td><input type="file" id="datafile" name="datafile" /></td>
-	<td><button id="upload-button" onclick="uploadFile()"> Upload </button></td>
-    </tr>
-</table>
-<form id="trainingForm" name="trainingForm">
-    <table>
-	<tr>
-	    <td>
-		<table id="vars" name="vars">
-		    <tr>
-			<th>Input Params</th>
-			<th>Output Params</th>
-		    </tr>
-		    <tr>
-			<td><div id="xparams"></div></td>
-			<td><div id="yparams"></div></td>
-		    </tr>
-		</table>
-		<br>
-	    </td>
-	</tr>
-	<tr>
-	    <td>
-		<input type="checkbox" id="layer" name="scaling" value="scale">
-		<label for="scaling"> Do Scaling</label><br>
-		<br>
-	    </td>
-	</tr>
-	<tr>
-	    <td>
-		<label for="epochs">Epochs:</label>
-		<input type="number" name="epochs" id="layer" min="0" max="10000" step="10" value="10">
-	    </td>
-	    <td>
-		<label for="batchsize">Batch Size:</label>
-		<input type="number" name="batchsize" id="layer" min="0" max="10000" step="100" value="0">
-	    </td>
-	</tr>
-	<tr>
-	    <td>
-		Network Structure (do not include input layer)
-	    </td>
-	</tr>
-	<tr>
-	    <td>
-		<table id="layers">
-		    <tr>
-			<th>Type</th>
-			<th>Neurons</th>
-			<th>Activation</th> 
-		    </tr> 
-		    <tr> 
-			<td id="col0">
-			    <select name="type" id="layer"> 
-				<option value="Linear">Linear</option> 
-				<option value="Convolution">Convolution</option>
-				<option value="Flatten">Flatten</option>
-				<option value="MaxPool">MaxPool</option>
-			    </select> 
-			</td> 
-			<td id="col1">
-			    <input type="number" name="neurons" id="layer" min="1" max="100" step="1" value="1">
-			</td> 
-			<td id="col2"> 
-			    <select name="activation" id="layer"> 
-				<option value="Sigmoid">Sigmoid</option> 
-				<option value="ReLU">ReLU</option>
-				<option value="Tanh">Tanh</option>
-			    </select> 
-			</td> 
-		    </tr>  
-		</table> 
-	    </td>
-	</tr>
-	<tr> 
-	    <td><input type="button" value="Add Layer" onclick="addRows()" /></td> 
-	    <td><input type="button" value="Delete Layer" onclick="deleteRows()" /></td> 
-	</tr>  
-	<tr>
-	    <td>
-		<label for="optimizer">Optimizer:</label>
-		<select name="optimizer" id="layer">
-		    <option value="Adam">Adam</option> 
+  <div class="form-group">
+    <label class="control-label col-sm-2">Network Architecture (no input layer):</label>
+    <div class="row clearfix">
+      <div class="col-sm-6 column">
+	<table class="table table-bordered table-hover" id="tab_logic" name="tab_logic">
+	  <thead>
+	    <tr>
+	      <th class="text-center">Type</th>
+	      <th class="text-center">Neurons</th>
+	      <th class="text-center">Activation</th>
+	    </tr>
+	  </thead>
+	  <tbody>
+	    <tr id='addr0'>
+	      <td>
+		<select class="form-control bldg-menu selectpicker" id="type" name="type" data-live-search="true" required>
+		  <option disabled="" selected="" value="">Select...</option>
+		  <option value="Linear">Linear</option>
+		  <option value="Convolution">Convolution</option>
+		  <option value="Flatten">Flatten</option>
+		  <option value="MaxPool">MaxPool</option>			    
 		</select>
-	    </td>
-	    <td>
-		<label for="loss">Loss Function:</label>
-		<select name="loss" id="layer"> 
-		    <option value="RMS">RMS</option>
-		    <option value="ABS">ABS</option> 
+	      </td>
+	      <td>
+		<input class="form-control" type="number" id="neurons" name="neurons" min="1" max="100" step="1" value="1">
+	      </td>
+	      <td>
+		<select class="form-control bldg-menu selectpicker" id="activation" name="activation" data-live-search="true" required>
+		  <option disabled="" selected="" value="">Select...</option>
+		  <option value="sigmoid">Sigmoid</option>
+		  <option value="relu">ReLU</option>
+		  <option value="tanh">Tanh</option>
+		  <option value="softmax">Softmax</option>		  
 		</select>
-	    </td>
-	</tr>
-	<tr>
-	    <td>
-		<input name="Submit" type="submit" value="Submit" />
-	    </td>
-	</tr>
-    </table>
+	      </td>
+	    </tr>
+	    <tr id='addr1'></tr>
+	  </tbody>
+	</table>
+	<a id="add_row" class="btn btn-default pull-left">Add Layer</a>
+	<a id='delete_row' class="pull-right btn btn-default">Delete Layer</a>
+      </div>
+    </div>
+    <div class="form-group">
+    </div>
+  </div>
+
+  <div id='layerError' class='alert alert-danger'>Alert</div>
+  
+  <div class="form-group">
+    <label class="control-label col-sm-2">Optimizer:</label>
+    <div class="col-sm-2">
+      <select class="form-control bldg-menu selectpicker" id="optimizer" name="optimizer" data-live-search="true" required>
+	<option disabled="" selected="" value="">Select...</option>
+	<option value="adam">Adam</option>
+      </select>
+    </div>
+  </div>
+
+  <div id='optimizerError' class='alert alert-danger'>Alert</div>
+  
+  <div class="form-group">
+    <label class="control-label col-sm-2">Loss:</label>
+    <div class="col-sm-2">
+      <select class="form-control bldg-menu selectpicker" id="loss" name="loss" data-live-search="true" required>
+	<option disabled="" selected="" value="">Select...</option>
+	<option value="mse">Mean Squared Error</option>
+	<option value="mae">Mean Absolute Error</option>
+	<option value="mape">Mean Absolute Percentage Error</option>
+      </select>
+    </div>
+  </div>
+
+  <div id='lossError' class='alert alert-danger'>Alert</div>
+  
+  <div class="form-group">
+    <div class="col-sm-offset-2 col-sm-10">
+      <button class="btn btn-primary click" type="submit" id="createModel" name="createModel">Create Model</button>
+    </div>
+  </div>
 </form>
-
-<script type="text/javascript">
-    var myform = document.getElementById("trainingForm");
-    myform.addEventListener("submit", trainingForm);
-</script>
 
 {% endblock %}
 

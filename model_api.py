@@ -21,11 +21,11 @@ def _loadData():
   time.sleep(2)
   return
 
-
 class TrainingPlot(Callback):
-  def __init__(self):
+  def __init__(self, config):
     self.epochs = 0
-  
+    self.url = f"http://{config['HOST']}:{config['PORT']}/update_training_status"
+    
   def on_train_begin(self, logs={}):
     self.losses = []
     self.acc = []
@@ -47,22 +47,20 @@ class TrainingPlot(Callback):
       plot = True
         
     if plot:
-      URL = "http://localhost:5000/update_training_status"
       PARAMS = {'loss': '{:0.4e}'.format(logs.get('loss', "")),
                 'val_loss': '{:0.4e}'.format(logs.get('val_loss', "")),
                 'epoch':epoch}
-      r = requests.get(url = URL, params = PARAMS)
+      r = requests.get(url = self.url, params = PARAMS)
 
   def on_train_end(self, logs):
-    URL = "http://localhost:5000/update_training_status"
     PARAMS = {'status':'END', 'epochs':self.epochs,
               'loss': '{:0.4e}'.format(self.losses[-1]),
                 'val_loss': '{:0.4e}'.format(self.val_losses[-1]),}
-    r = requests.get(url = URL, params = PARAMS)
+    r = requests.get(url = self.url, params = PARAMS)
 
     
 class ModelAPI:
-  def __init__(self):
+  def __init__(self, config):
     self.x_names = []
     self.y_names = []
     self.scaler_x = None
@@ -70,11 +68,13 @@ class ModelAPI:
     self.name = ""
     self.filename = ""
     self.do_scaling = False
-    self.callback = TrainingPlot()
+    self.callback = TrainingPlot(config)
     self.model = None
-
+    self.config = config
+    
   def prepare_sample(self, testfrac):
-    df = pd.read_csv(self.filename)
+    path = os.path.join(self.config['UPLOAD_FOLDER'], self.filename)
+    df = pd.read_csv(path)
     
     if self.do_scaling:
       self.scaler_x = MinMaxScaler()
@@ -121,11 +121,12 @@ class ModelAPI:
 
   def save(self):
     try:
+      folder = self.config['MODEL_FOLDER']
       data = {"x_names":self.x_names, "y_names":self.y_names,
               "do_scaling":self.do_scaling,
               "x_scaler":self.scaler_x, "y_scaler":self.scaler_y}
-      pickle.dump(data, open(f"{self.name}_data.pkl", "wb"))
-      self.model.save(self.name)
+      pickle.dump(data, open(os.path.join(folder, f"{self.name}_data.pkl"), "wb"))
+      self.model.save(os.path.join(folder, self.name))
     except Exception:
       err = traceback.format_exc()
       #print (err)
@@ -134,6 +135,7 @@ class ModelAPI:
       return True, self.name
   
   def load(self):
+    # FIXME AGGIUNGERE FULL PATH
     data = pickle.load(open(f"{self.name}_data.pkl", "rb"))
     self.x_names = data["x_names"]
     self.y_names = data["y_names"]
@@ -162,7 +164,7 @@ class ModelAPI:
                              callbacks = [self.callback],
                              validation_data=(self.x_test, self.y_test),
                              verbose=0)
-    //self.check_overfit()
+    #self.check_overfit()
 
 #class TrainModel (threading.Thread):
 #    def __init__(self, data):

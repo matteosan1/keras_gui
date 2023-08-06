@@ -8,19 +8,22 @@ from werkzeug.utils import secure_filename
 
 from model_api import ModelAPI
 from message_announcer import MessageAnnouncer, format_sse
+from settings import Settings
+
+config = Settings()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24).hex()
-app.config['UPLOAD_FOLDER'] = "/tmp/"
-app.config['UPLOAD_EXTENSIONS'] = ['.css', '.csv']
-app.config['MAX_CONTENT_LENGTH'] = 1024*1024
+app.config['UPLOAD_FOLDER'] = config['FLASK_UPLOAD_FOLDER']
+app.config['UPLOAD_EXTENSIONS'] = config['FLASK_UPLOAD_EXTENSIONS']
+app.config['MAX_CONTENT_LENGTH'] = config['FLASK_MAX_CONTENT_LENGTH']
 
-m = ModelAPI()
+m = ModelAPI(config)
 announcer = MessageAnnouncer()
 
 @app.route("/", methods=['GET'])
 def index():
-    return render_template("index.html")#, messages=messages)
+    return render_template("index.html")
 
 @app.route('/loaddata', methods=['POST'])
 def testfn():
@@ -38,7 +41,7 @@ def df_columns(filename):
 @app.route('/look_for_template', methods=['GET'])
 def look_for_template():
   nnname = request.args.get('nnname')
-  filename = f"{nnname}.json"
+  filename = join(config['MODEL_TMP_FOLDER'], f"{nnname}.json")
   if isfile(filename):
     with open(filename) as f:
       data = json.load(f)
@@ -91,7 +94,8 @@ def create_model():
     m.create_model(data, inputs, outputs)
     data['filename'] = m.filename
     data['cols'] = df_columns(m.filename)
-    with open(f"{data['nnname'][0]}.json", "w") as f:
+    filename = join(config['MODEL_TMP_FOLDER'], f"{data['nnname'][0]}.json")
+    with open(filename, "w") as f:
       json.dump(data, f)
 
   return jsonify({'msg':msg, 'type':typ}), 200
@@ -135,7 +139,6 @@ def start_training():
 @app.route("/save_model", methods=['GET'])
 def save_model():
   exit_code, msg = m.save()
-  print (exit_code, msg)
   if exit_code:
     msg = f"Model {msg} correctly saved.",  
     return jsonify({'msg':msg, 'status':"OK"}), 200

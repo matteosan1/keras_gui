@@ -1,4 +1,4 @@
-import requests, pickle, os
+import requests, pickle, os, traceback
 import pandas as pd
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
@@ -35,27 +35,32 @@ class TrainingPlot(Callback):
     
   def on_epoch_end(self, epoch, logs={}):
     self.logs.append(logs)
-    self.losses.append(logs.get('loss'))
-    self.acc.append(logs.get('acc'))
-    self.val_losses.append(logs.get('val_loss'))
-    self.val_acc.append(logs.get('val_acc'))
+    self.losses.append(logs.get('loss', 0))
+    #self.acc.append(logs.get('acc', 0))
+    self.val_losses.append(logs.get('val_loss', 0))
+    #self.val_acc.append(logs.get('val_acc', 0))
 
     plot = False
     if self.epochs >= 100 and epoch%10 == 1:
-        plot = True
+      plot = True
+    else:
+      plot = True
         
     if plot:
       URL = "http://localhost:5000/update_training_status"
       PARAMS = {'loss': '{:0.4e}'.format(logs.get('loss', "")),
-                'acc':logs.get('acc'),
+                'val_loss': '{:0.4e}'.format(logs.get('val_loss', "")),
                 'epoch':epoch}
       r = requests.get(url = URL, params = PARAMS)
 
   def on_train_end(self, logs):
     URL = "http://localhost:5000/update_training_status"
-    PARAMS = {'status':'END'}
+    PARAMS = {'status':'END', 'epochs':self.epochs,
+              'loss': '{:0.4e}'.format(self.losses[-1]),
+                'val_loss': '{:0.4e}'.format(self.val_losses[-1]),}
     r = requests.get(url = URL, params = PARAMS)
 
+    
 class ModelAPI:
   def __init__(self):
     self.x_names = []
@@ -66,6 +71,7 @@ class ModelAPI:
     self.filename = ""
     self.do_scaling = False
     self.callback = TrainingPlot()
+    self.model = None
 
   def prepare_sample(self, testfrac):
     df = pd.read_csv(self.filename)
@@ -82,9 +88,11 @@ class ModelAPI:
     self.x_train, self.x_test,self.y_train, self.y_test = train_test_split(self.x,
                                                                            self.y,
                                                                            test_size=testfrac)
-    
+
   def create_model(self, data, inputs, outputs):
-    self.name = data['nnname']
+    self.name = data['nnname'][0]
+    if 'loaded_file' in data:
+      self.filename = data['loaded_file'][0]
     self.x_names = list(inputs)
     self.y_names = list(outputs)
     if 'scaling' in data:
@@ -108,13 +116,22 @@ class ModelAPI:
         if data['type'][i] == 'Linear':
           self.model.add(Dense(int(data['neurons'][i]), activation=data['activation'][i]))
     self.model.summary()
-          
+    self.model.compile(loss=self.loss,
+                       optimizer=self.optimizer)
+
   def save(self):
-    data = {"x_names":self.x_names, "y_names":self.y_names,
-            "do_scaling":self.do_scaling,
-            "x_scaler":self.scaler_x, "y_scaler":self.scaler_y}
-    pickle.dump(data, open(f"{self.name}_data.pkl", "wb"))
-    self.model.save(self.name)
+    try:
+      data = {"x_names":self.x_names, "y_names":self.y_names,
+              "do_scaling":self.do_scaling,
+              "x_scaler":self.scaler_x, "y_scaler":self.scaler_y}
+      pickle.dump(data, open(f"{self.name}_data.pkl", "wb"))
+      self.model.save(self.name)
+    except Exception:
+      err = traceback.format_exc()
+      #print (err)
+      return False, err
+    else:
+      return True, self.name
   
   def load(self):
     data = pickle.load(open(f"{self.name}_data.pkl", "rb"))
@@ -131,18 +148,21 @@ class ModelAPI:
     print (scale_y.inverse_transform(model.predict(x_transf)))
     
   def check_overfit(self):
-    eval_train = model.evaluate(X_train, y_train)
-    print('Training: {}'.format(eval_train))
-    eval_test = model.evaluate(X_test, y_test)
-    print('Test: {}'.format(eval_test))
+    eval_train = self.model.evaluate(self.x_train, self.y_train)
+    #print('Training: {}'.format(eval_train))
+    eval_test = self.model.evaluate(self.x_test, self.y_test)
+    #print('Test: {}'.format(eval_test))
     
   def fit(self):
-    self.model.compile(loss=self.loss, optimizer=self.optimizer)
-    #model.fit(self.x_train, self.y_train, epochs=self.epochs, verbose=1)
+    if self.model is None:
+      return
+    self.model.reset_states()
     history = self.model.fit(self.x_train, self.y_train,
                              batch_size = self.batch_size, epochs = self.epochs,
-                             callbacks = [self.callback])
-    #validation_data=(x_val, y_val))
+                             callbacks = [self.callback],
+                             validation_data=(self.x_test, self.y_test),
+                             verbose=0)
+    //self.check_overfit()
 
 #class TrainModel (threading.Thread):
 #    def __init__(self, data):

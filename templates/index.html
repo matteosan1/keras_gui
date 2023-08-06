@@ -20,6 +20,7 @@
     <div class="col-sm-4">
       <input class="form-control" type="file" name="datafile" id="datafile" />
     </div>
+    <label class="control-label col-sm-2" id="loaded_file" name="loaded_file"></label>
   </div>
 </div>
 
@@ -64,13 +65,15 @@
   <div class="form-group">
     <label class="control-label col-sm-2">Neural Network Name:</label>
     <div class="col-sm-2">
-      <input class="form-control" type="text" id="nnname" name="nnname" placeholder="NN name..." />
+      <input class="form-control" type="text" id="nnname" name="nnname" onkeyup="enable_button()" placeholder="NN name..." /><button class="btn btn-primary click" type="button" id="load_template" name="load_template" disabled>Load Template</button>
     </div>
   </div>
   <div class="form-group">
     <label class="control-label col-sm-2">Epochs:</label>
-    <div class="col-sm-2">
-      <input class="form-control" type="number" id="epochs" name="epochs" min="0" max="10000" step="10" value="10" />
+    <div class="form-inline">
+      <div class="col-sm-2">
+	<input class="form-control" type="number" id="epochs" name="epochs" min="0" max="10000" step="10" value="10" />
+      </div>
     </div>
   </div>
   <div class="form-group">
@@ -93,30 +96,7 @@
 	    </tr>
 	  </thead>
 	  <tbody>
-	    <tr id='addr0'>
-	      <td>
-		<select class="form-control bldg-menu selectpicker" id="type" name="type" data-live-search="true" required>
-		  <option disabled="" selected="" value="">Select...</option>
-		  <option value="Linear">Linear</option>
-		  <option value="Convolution">Convolution</option>
-		  <option value="Flatten">Flatten</option>
-		  <option value="MaxPool">MaxPool</option>			    
-		</select>
-	      </td>
-	      <td>
-		<input class="form-control" type="number" id="neurons" name="neurons" min="1" max="100" step="1" value="1">
-	      </td>
-	      <td>
-		<select class="form-control bldg-menu selectpicker" id="activation" name="activation" data-live-search="true" required>
-		  <option disabled="" selected="" value="">Select...</option>
-		  <option value="sigmoid">Sigmoid</option>
-		  <option value="relu">ReLU</option>
-		  <option value="tanh">Tanh</option>
-		  <option value="softmax">Softmax</option>		  
-		</select>
-	      </td>
-	    </tr>
-	    <tr id='addr1'></tr>
+	    <tr id='addr0'></tr>
 	  </tbody>
 	</table>
 	<a id="add_row" class="btn btn-default pull-left">Add Layer</a>

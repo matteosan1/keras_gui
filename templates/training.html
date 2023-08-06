@@ -17,30 +17,26 @@
   }
 </style>
 
-<div class="form-group">
-  <div class="col-sm-offset-2 col-sm-10">
-    <button class="btn btn-primary click" type="submit" id="train" name="train">Train !</button>
-  </div>
+<div class="row">
+  <div class="col-sm-offset-1"><button class="btn btn-primary click pull-left" type="button" id="train" name="train">Train !</button></div>
+  <div class="col-sm-2"><button class="btn btn-primary click pull-right" type="button" id="save" name="save" disabled>Save NN</button></div>
 </div>
-
-<div class="form-group">
-  <div class="col-sm-offset-2 col-sm-10">
-    <button class="btn btn-primary click" type="submit" id="save" name="save">Save NN</button>
-  </div>
+<div id='model_saved' class='alert alert-success'>Model saved succesfully !</div>
+<div id='model_not_saved' class='alert alert-danger'>Alert</div>
+<br><br>
+<div class="row">
+  <label class="control-label col-sm-offset-1" id="epochs"></label>
 </div>
-
-<div id="loss" name="loss"></div>
-
-<div class="container">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <canvas id="canvas"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="row">
+  <label class="control-label col-sm-offset-1" id="loss_train"></label>
+</div>
+<div class="row">
+  <label class="control-label col-sm-offset-1" id="loss_test"></label>
+</div>
+<div class="row">
+  <div class="col-sm-8">
+    <canvas id="canvas"></canvas>
+  </div>
 </div>
 
 {% endblock %}
